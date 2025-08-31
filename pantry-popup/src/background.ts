@@ -1,19 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
 
-// console.log("Background script loaded!")
-// console.log(chrome.contextMenus)
 
 type AssetType = "image" | "link" | "text" | "video" | "audio"
 
-type Asset = {
+export type Asset = {
     url: string,
     type: AssetType
 }
-
-const supabaseURL = "https://oqawdekjzxidfkqrgsot.supabase.co"
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseURL, supabaseAnonKey)
-console.log(supabase)
+console.log("Background script loaded!")
 
 chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
@@ -43,31 +36,28 @@ chrome.runtime.onInstalled.addListener(() => {
     });
 });
 
-chrome.contextMenus.onClicked.addListener((asset) => {
+chrome.contextMenus.onClicked.addListener((asset, tab) => {
     console.log(asset);
     if (asset.menuItemId === "save-image") {
         console.log("Save image to pantry");
-        saveToPantry({
-            url: asset.srcUrl!,    
-            type: "image"
-        }, "image")
+        const assetToSave = {url: asset.srcUrl, type: "image"}
+        // send message to content script with error handling
+        if (tab?.id) {
+            chrome.tabs.sendMessage(tab.id, {
+                action: "save-image",
+                asset: assetToSave,
+            }).catch((error) => {
+                console.error("Failed to send message to content script:", error);
+                console.log("Content script not available, handling in background");
+                // Handle the save directly in background script
+                console.log("Asset to save:", asset);
+            });
+        }
     }
     if (asset.menuItemId ==="save-link") {
         console.log("Save Link");
-        saveToPantry({
-            url: asset.srcUrl!,    
-            type: "link"
-        }, "link")
+   
     }
 
 });
 
-
-async function saveToPantry(asset: Asset, type: AssetType){
-    const {data, error} = await supabase.from('asset collection').insert({
-       src_url: asset.url,
-       asset_type:type,
-    })
-    console.log(data)
-    console.log(error)
-}
