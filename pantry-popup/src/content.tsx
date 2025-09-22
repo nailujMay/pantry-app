@@ -1,6 +1,4 @@
-
 import ReactDOM from "react-dom/client";
-// import { ExtPopup } from "./components/ExtPopup"; // your modal component
 import type { Asset } from "./background";
 import { useState } from "react";
 console.log("Content script loaded");
@@ -12,30 +10,9 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY!
 const supabase = createClient(supabaseURL, supabaseAnonKey)
 
 function MusePopup({ asset}: { asset: Asset}) {
-
   const [isSaved, setIsSaved] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   console.log("user",user)
-
-// useEffect(() => {
-//   // Get initial session
-//   const getInitialSession = async () => {
-//     const { data: { session } } = await supabase.auth.getSession()
-//     setUser(session?.user ?? null)
-//   }
-
-//   getInitialSession()
-
-//   // Listen for auth changes
-//   const { data: { subscription } } = supabase.auth.onAuthStateChange(
-//     (event, session) => {
-//       console.log("event",event)
-//       setUser(session?.user ?? null)
-//     }
-//   )
-
-//   return () => subscription.unsubscribe()
-// }, [])
 
   async function saveAsset() {
       console.log("saving asset")
@@ -56,29 +33,18 @@ function MusePopup({ asset}: { asset: Asset}) {
       }
   }
 
-  // function redirectToMuse() {
-  //     // local host for now, muse.com later
-  //     window.open('http://localhost:3000', '_blank');
-  // }
-
-  console.log("rendering popup")
-
   async function sendAuthMessage(){
     const response = await chrome.runtime.sendMessage({action: "auth-message"}, (response) => {
       if (chrome.runtime.lastError) {
         console.error("Error sending message:", chrome.runtime.lastError);
         return;
       }
-      
-      console.log("auth response received", response);
-      
+            
       if (response && response.action === "auth-success") {
         console.log("Authentication successful:", response.userInfo);
         setUser(response.userInfo);
-        // Handle successful authentication
       } else if (response && response.action === "auth-error") {
         console.error("Authentication failed:", response.error);
-        // Handle authentication error
       }
     });
     console.log("auth response received", response);
@@ -133,7 +99,6 @@ function MusePopup({ asset}: { asset: Asset}) {
 
 
 function injectModal(asset: Asset) {
-  console.log("injecting modal");
     if (document.getElementById("my-extension-modal")) return;
   
     const container = document.createElement("div");
@@ -141,7 +106,6 @@ function injectModal(asset: Asset) {
     document.body.appendChild(container);
   
     const root = ReactDOM.createRoot(container);
-    console.log("rendering modal");
     root.render(<MusePopup asset={asset} />);
   }
 
