@@ -1,15 +1,39 @@
-import { createClient } from '@supabase/supabase-js'
-// import { useState, useEffect } from 'react'
+
+import { createClient, type User } from '@supabase/supabase-js'
+import { useState, useEffect } from 'react'
 import type { Asset } from '../background'
-import { useState } from 'react'
 
 const supabaseURL = "https://oqawdekjzxidfkqrgsot.supabase.co"
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY!
 const supabase = createClient(supabaseURL, supabaseAnonKey)
 
-export function ExtPopup({ asset }: { asset: Asset }) {
+
+export function ExtPopup({ asset, sendAuthMessage, sendLogoutMessage }: { asset: Asset, sendAuthMessage: () => void, sendLogoutMessage: () => void }) {
+
     const [isSaved, setIsSaved] = useState(false)
 
+    const [user, setUser] = useState<User | null>(null)
+    console.log("user",user)
+
+  useEffect(() => {
+    // Get initial session
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      setUser(session?.user ?? null)
+    }
+
+    getInitialSession()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log("event",event)
+        setUser(session?.user ?? null)
+      }
+    )
+
+    return () => subscription.unsubscribe()
+  }, [])
 
     async function saveAsset() {
         console.log("saving asset")
@@ -30,6 +54,11 @@ export function ExtPopup({ asset }: { asset: Asset }) {
         }
     }
 
+    // function redirectToMuse() {
+    //     // local host for now, muse.com later
+    //     window.open('http://localhost:3000', '_blank');
+    // }
+
     console.log("rendering popup")
     return (
         <div style={{
@@ -47,20 +76,29 @@ export function ExtPopup({ asset }: { asset: Asset }) {
             padding: '10px'
         }}>
       
-                <h1 style={{ 
-                    color: '#333',
-                    fontSize: '24px',
-                    fontWeight: 'bold'
-                }}>Muse</h1>
-                <img style={{height: '200px', width: 'auto'}} src={asset.url} alt="Asset" />
+            
+           { user ?
+           <>
+           <h1 style={{ 
+                color: '#333',
+                fontSize: '24px',
+                fontWeight: 'bold'
+            }}>Muse</h1>
+            <img style={{height: '200px', width: 'auto'}} src={asset.url} alt="Asset" />
 
-                <button style={{
-                    backgroundColor: 'blue',
-                    color: 'white',
-                    padding: '10px',
-                    borderRadius: '5px'
-                }} onClick={saveAsset}>Save</button>
-                {isSaved && <p>Asset saved</p>}
+            <button style={{
+                backgroundColor: 'blue',
+                color: 'white',
+                padding: '10px',
+                borderRadius: '5px'
+            }} onClick={saveAsset}>Save</button>
+            {isSaved && <p>Asset saved</p>}
+            </>
+            
+            :<button onClick={sendAuthMessage}>{"login at muse"}</button>}
+
+            <button onClick={sendLogoutMessage}>{"logout"}</button>
+         
     
             
         </div>

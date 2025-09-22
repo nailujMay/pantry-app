@@ -19,7 +19,12 @@
         "storage",
         "tabs",
         "activeTab",
-        "contextMenus"
+        "contextMenus",
+        "identity"
+      ],
+      "host_permissions": [
+        "https://*.supabase.co/*",
+        "https://accounts.google.com/*"
       ]
   }
   
