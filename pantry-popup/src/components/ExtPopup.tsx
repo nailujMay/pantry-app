@@ -8,7 +8,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY!
 const supabase = createClient(supabaseURL, supabaseAnonKey)
 
 
-export function ExtPopup({ asset, sendAuthMessage, sendLogoutMessage }: { asset: Asset, sendAuthMessage: () => void, sendLogoutMessage: () => void }) {
+export function ExtPopup({ asset, sendAuthMessage,sendLogoutMessage }: { asset: Asset, sendAuthMessage: () => void, sendLogoutMessage: () => void }) {
 
     const [isSaved, setIsSaved] = useState(false)
 
