@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+// import { createClient } from "@supabase/supabase-js";
 
 type AssetType = "image" | "link" | "text" | "video" | "audio";
 
@@ -12,11 +12,6 @@ export type UserInfo = {
   name: string;
 };
 console.log("Background script loaded!");
-
-// Create supabase client
-const supabaseURL = "https://oqawdekjzxidfkqrgsot.supabase.co";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseURL, supabaseAnonKey);
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -47,8 +42,6 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 chrome.contextMenus.onClicked.addListener((asset, tab) => {
-  console.log(asset);
-  // This function runs for ANY context menu click
   const hasSession = checkUserSession(asset);
   if (!hasSession && tab?.id) {
     chrome.tabs.sendMessage(tab.id, {
@@ -73,53 +66,13 @@ chrome.contextMenus.onClicked.addListener((asset, tab) => {
   }
 });
 
-// function to check user session
 async function checkUserSession(asset: chrome.contextMenus.OnClickData) {
   console.log("Context menu clicked:", asset.menuItemId);
 
   // check chrome local storage for session
   const { session } = await chrome.storage.local.get(["session"]);
-
-  // if session is found set supabase session
-  if (session) {
-    await supabase.auth.setSession(session);
-  } else {
-    return false;
-  }
-  return true;
+  console.log("Session from chrome storage:", session);
 }
-
-// listen for auth message
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "auth-message") {
-    (async () => {
-      try {
-        // get supabase auth tokens
-        const authResult = (await getSupabaseAuthToken()) as {
-          accessToken: string;
-          refreshToken: string;
-        };
-        console.log("supabase auth result", authResult);
-
-        // get user info from supabase
-        const userInfo = await getUserInfoFromSupabase(authResult.accessToken);
-        console.log("user auth info", userInfo);
-        console.log(sender);
-        sendResponse({
-          action: "auth-success",
-          userInfo: userInfo,
-        });
-      } catch (error) {
-        console.error("Auth flow failed:", error);
-        sendResponse({
-          action: "auth-error",
-          error: error,
-        });
-      }
-    })();
-    return true;
-  }
-});
 
 // listen for logout message
 chrome.runtime.onMessage.addListener(async (message) => {
@@ -138,101 +91,99 @@ chrome.runtime.onMessageExternal.addListener(async (message) => {
     const session = message.session;
     if (session) {
       console.log("setting session", session);
+      console.log("Setting session with:", JSON.stringify(session, null, 2));
 
       // Store the session in chrome storage
       await chrome.storage.local.set({ session: session });
 
       // Set session in background supabase client
-      const { data, error } = await supabase.auth.setSession({
-        access_token: session.access_token,
-        refresh_token: session.refresh_token,
-      });
+      // await supabase.auth.setSession(session);
 
-      if (error) {
-        console.error("Error setting session in background:", error);
-      } else {
-        console.log("Session set successfully in background:", data);
-      }
+      // if (error) {
+      //   console.error("Error setting session in background:", error);
+      // } else {
+      //   console.log("Session set successfully in background:", data);
+      // }
     }
   }
   return true;
 });
 
-function getSupabaseAuthToken() {
-  console.log("start supabase auth flow");
-  const redirectUri = chrome.identity.getRedirectURL();
+// function getSupabaseAuthToken() {
+//   console.log("start supabase auth flow");
+//   const redirectUri = chrome.identity.getRedirectURL();
 
-  // Supabase OAuth URL
-  const supabaseAuthUrl = `${supabaseURL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(
-    redirectUri
-  )}`;
+//   // Supabase OAuth URL
+//   const supabaseAuthUrl = `${supabaseURL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(
+//     redirectUri
+//   )}`;
 
-  return new Promise((resolve, reject) => {
-    chrome.identity.launchWebAuthFlow(
-      {
-        url: supabaseAuthUrl,
-        interactive: true,
-      },
-      (responseUrl) => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-        } else {
-          console.log("Supabase auth response URL:", responseUrl);
+//   return new Promise((resolve, reject) => {
+//     chrome.identity.launchWebAuthFlow(
+//       {
+//         url: supabaseAuthUrl,
+//         interactive: true,
+//       },
+//       (responseUrl) => {
+//         if (chrome.runtime.lastError) {
+//           reject(chrome.runtime.lastError);
+//         } else {
+//           console.log("Supabase auth response URL:", responseUrl);
 
-          // Extract tokens from Supabase response
-          const url = new URL(responseUrl as string);
+//           // Extract tokens from Supabase response
+//           const url = new URL(responseUrl as string);
 
-          // Supabase returns access_token and refresh_token in the hash
-          const accessToken = url.hash.includes("access_token=")
-            ? url.hash.split("access_token=")[1]?.split("&")[0]
-            : null;
-          const refreshToken = url.hash.includes("refresh_token=")
-            ? url.hash.split("refresh_token=")[1]?.split("&")[0]
-            : null;
+//           // Supabase returns access_token and refresh_token in the hash
+//           const accessToken = url.hash.includes("access_token=")
+//             ? url.hash.split("access_token=")[1]?.split("&")[0]
+//             : null;
+//           const refreshToken = url.hash.includes("refresh_token=")
+//             ? url.hash.split("refresh_token=")[1]?.split("&")[0]
+//             : null;
 
-          console.log("Access token from Supabase:", accessToken);
-          console.log("Refresh token from Supabase:", refreshToken);
+//           console.log("Access token from Supabase:", accessToken);
+//           console.log("Refresh token from Supabase:", refreshToken);
 
-          if (accessToken) {
-            console.log("Supabase tokens extracted successfully");
-            resolve({ accessToken, refreshToken });
-          } else {
-            console.error("No access token found. Full response:", responseUrl);
-            reject(new Error("No access token found in response"));
-          }
-        }
-      }
-    );
-  });
-}
+//           if (accessToken) {
+//             console.log("Supabase tokens extracted successfully");
+//             resolve({ accessToken, refreshToken });
+//           } else {
+//             console.error("No access token found. Full response:", responseUrl);
+//             reject(new Error("No access token found in response"));
+//           }
+//         }
+//       }
+//     );
+//   });
+// }
 
-async function getUserInfoFromSupabase(accessToken: string) {
-  console.log("getting user info from supabase", accessToken);
+// async function getUserInfoFromSupabase(accessToken: string) {
+//   console.log("getting user info from supabase", accessToken);
 
-  try {
-    const response = await fetch(`${supabaseURL}/auth/v1/user`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        apikey: supabaseAnonKey,
-      },
-    });
+//   try {
+//     const response = await fetch(`${supabaseURL}/auth/v1/user`, {
+//       headers: {
+//         Authorization: `Bearer ${accessToken}`,
+//         apikey: supabaseAnonKey,
+//       },
+//     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+//     if (!response.ok) {
+//       throw new Error(`HTTP error! status: ${response.status}`);
+//     }
 
-    const userInfo = await response.json();
-    console.log("supabase user info", userInfo);
+//     const userInfo = await response.json();
+//     console.log("supabase user info", userInfo);
 
-    return {
-      email: userInfo.email,
-      name: userInfo.user_metadata?.full_name || userInfo.user_metadata?.name,
-      picture: userInfo.user_metadata?.avatar_url,
-      sub: userInfo.id,
-      email_verified: userInfo.email_confirmed_at ? true : false,
-    };
-  } catch (error) {
-    console.error("Error getting user info from Supabase:", error);
-    throw new Error("Failed to get user info from Supabase");
-  }
-}
+//     return {
+//       email: userInfo.email,
+//       name: userInfo.user_metadata?.full_name || userInfo.user_metadata?.name,
+//       picture: userInfo.user_metadata?.avatar_url,
+//       sub: userInfo.id,
+//       email_verified: userInfo.email_confirmed_at ? true : false,
+//     };
+//   } catch (error) {
+//     console.error("Error getting user info from Supabase:", error);
+//     throw new Error("Failed to get user info from Supabase");
+//   }
+// }

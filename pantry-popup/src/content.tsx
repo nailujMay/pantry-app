@@ -11,41 +11,25 @@ const supabase = createClient(supabaseURL, supabaseAnonKey);
 
 console.log("Content script loaded");
 
-function MusePopup({ asset, userAuth }: { asset: Asset; userAuth: boolean }) {
+function MusePopup({ asset }: { asset: Asset }) {
   const [isSaved, setIsSaved] = useState(false);
-  const [hasSession, setHasSession] = useState(userAuth);
+  const [hasSession, setHasSession] = useState(false);
 
   // Check for session in chrome storage on mount
   useEffect(() => {
     chrome.storage.local.get(["session"], async (result) => {
       if (result.session) {
         console.log("Session found in storage:", result.session);
-        try {
-          // Set the session in the supabase client
-          const { data, error } = await supabase.auth.setSession({
-            access_token: result.session.access_token,
-            refresh_token: result.session.refresh_token,
-          });
-
-          if (error) {
-            console.error("Error setting session:", error);
-            setHasSession(false);
-            // Clear invalid session
-            await chrome.storage.local.remove(["session"]);
-          } else {
-            console.log("Session set successfully:", data);
-            setHasSession(true);
-          }
-        } catch (error) {
+        const { data, error } = await supabase.auth.setSession(result.session);
+        if (error) {
           console.error("Error setting session:", error);
-          setHasSession(false);
+        } else {
+          console.log("Session set successfully:", data);
+          setHasSession(true);
         }
-      } else {
-        console.log("No session found");
-        setHasSession(false);
       }
     });
-  }, []);
+  });
 
   async function saveAsset() {
     console.log("saving asset");
@@ -208,14 +192,14 @@ function MusePopup({ asset, userAuth }: { asset: Asset; userAuth: boolean }) {
 // Store the root so we can reuse it
 let modalRoot: ReactDOM.Root | null = null;
 
-function injectModal(asset: Asset, userAuth: boolean) {
+function injectModal(asset: Asset) {
   let container = document.getElementById("my-extension-modal");
 
   // If modal already exists, update it instead of creating new one
-  if (container && modalRoot) {
-    modalRoot.render(<MusePopup asset={asset} userAuth={userAuth} />);
-    return;
-  }
+  // if (container && modalRoot) {
+  //   modalRoot.render(<MusePopup asset={asset} />);
+  //   return;
+  // }
 
   // Create new modal container
   container = document.createElement("div");
@@ -224,7 +208,7 @@ function injectModal(asset: Asset, userAuth: boolean) {
 
   // Create root once and store it
   modalRoot = ReactDOM.createRoot(container);
-  modalRoot.render(<MusePopup asset={asset} userAuth={userAuth} />);
+  modalRoot.render(<MusePopup asset={asset} />);
 }
 
 function removeModal() {
@@ -241,7 +225,7 @@ chrome.runtime.onMessage.addListener((message) => {
   if (message.action === "save-image") {
     console.log("Asset to save:", message.asset);
     // Send response back to confirm receipt
-    injectModal(message.asset.asset, message.asset.auth);
+    injectModal(message.asset.asset);
   }
   // Return true to indicate we will send a response
   return true;
