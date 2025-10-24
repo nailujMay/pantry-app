@@ -1,0 +1,99 @@
+/* Content Script Styles - Scoped with muse-extension prefix to avoid conflicts */
+
+.muse-extension-modal {
+  position: fixed;
+  top: 0;
+  right: 0;
+  display: flex;
+  z-index: 1000;
+  margin: 10px;
+  background-color: #fff;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  min-width: 250px;
+  font-family: "Inter", sans-serif;
+  border: 3px solid black;
+}
+
+.muse-extension-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: right;
+  width: 100%;
+}
+
+.muse-extension-close-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+  transition: color 0.2s;
+}
+
+.muse-extension-close-btn:hover {
+  color: #333;
+}
+
+.muse-extension-title {
+  color: #333;
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.muse-extension-image {
+  height: 200px;
+  width: auto;
+  margin-bottom: 10px;
+  border-radius: 4px;
+}
+
+.muse-extension-btn {
+  padding: 10px 20px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: opacity 0.2s;
+  margin-top: 10px;
+}
+
+.muse-extension-btn:hover {
+  opacity: 0.9;
+}
+
+.muse-extension-btn-primary {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.muse-extension-btn-danger {
+  background-color: grey;
+  color: white;
+}
+
+.muse-extension-link {
+  color: #3b82f6;
+  text-decoration: none;
+  padding: 10px;
+  border: 1px solid #3b82f6;
+  border-radius: 5px;
+  transition: background-color 0.2s;
+}
+
+.muse-extension-link:hover {
+  background-color: #eff6ff;
+}
+
+.muse-extension-success-msg {
+  color: #16a34a;
+  font-size: 14px;
+  margin-top: 8px;
+  font-weight: 500;
+}
